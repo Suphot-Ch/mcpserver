@@ -6,6 +6,13 @@ This is a Model Context Protocol (MCP) server that provides a bridge to the `gem
 
 - **ask-gemini**: Send prompts directly to Gemini and receive high-quality responses.
 - **Model Selection**: Supports specifying different Gemini models (e.g., `gemini-2.0-flash`, `gemini-1.5-pro`).
+  To set a default model for the server, create a `config.json` file in the same directory as `index.js`:
+
+```json
+{
+  "geminiModel": "gemini-2.0-flash"
+}
+```
 
 ## 🚀 Installation
 

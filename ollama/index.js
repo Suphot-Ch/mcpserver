@@ -1,10 +1,33 @@
-import "dotenv/config";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const CONFIG_PATH = path.join(__dirname, "config.json");
+
+// Load configuration
+let config = {
+  ollamaBaseUrl: "http://localhost:11434",
+  ollamaDefaultModel: "gemma3:1b"
+};
+
+try {
+  if (fs.existsSync(CONFIG_PATH)) {
+    const fileConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+    config = { ...config, ...fileConfig };
+  }
+} catch (error) {
+  console.error("Error loading config.json:", error.message);
+}
+
+const OLLAMA_BASE_URL = config.ollamaBaseUrl;
 
 const server = new Server(
   {
@@ -17,8 +40,6 @@ const server = new Server(
     },
   }
 );
-
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 
 /**
  * Handler that lists available tools.
@@ -130,7 +151,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     if (name === "generate-completion") {
       const { model, prompt, system, template, stream = false } = args;
-      const activeModel = model || process.env.OLLAMA_DEFAULT_MODEL;
+      const activeModel = model || config.ollamaDefaultModel;
 
       const response = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
         method: "POST",
@@ -161,7 +182,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     if (name === "chat-completion") {
       const { model, messages, stream = false } = args;
-      const activeModel = model || process.env.OLLAMA_DEFAULT_MODEL;
+      const activeModel = model || config.ollamaDefaultModel;
 
       const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
         method: "POST",

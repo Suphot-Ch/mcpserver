@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -12,12 +11,31 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const ENV_FILE = path.join(__dirname, ".env");
+const CONFIG_PATH = path.join(__dirname, "config.json");
+
+// Load configuration
+let config = {
+  geminiModel: "gemini-2.0-flash"
+};
+
+try {
+  if (fs.existsSync(CONFIG_PATH)) {
+    const fileConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+    config = { ...config, ...fileConfig };
+  }
+} catch (error) {
+  console.error("Error loading config.json:", error.message);
+}
 
 /**
  * Function to dynamically find the path to the Gemini CLI's index.js.
  */
 function findGeminiCliPath() {
+  // 0. Use CLI_INDEXPATH from environment if provided
+  if (process.env.CLI_INDEXPATH && fs.existsSync(process.env.CLI_INDEXPATH)) {
+    return process.env.CLI_INDEXPATH;
+  }
+
   const cliRelativePath = path.join("@google", "gemini-cli", "dist", "index.js");
   let globalNodeModulesPath;
 
@@ -156,7 +174,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   if (name === "ask-gemini") {
     const { prompt, model } = args;
-    const activeModel = model || process.env.GEMINI_MODEL;
+    const activeModel = model || config.geminiModel;
     const spawnArgs = [geminiJsPath, "--prompt", prompt];
 
     if (activeModel) {
@@ -220,29 +238,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (name === "set-default-model") {
     const { model } = args;
     try {
-      let envContent = "";
-      if (fs.existsSync(ENV_FILE)) {
-        envContent = fs.readFileSync(ENV_FILE, "utf8");
-      }
-
-      const regex = /^GEMINI_MODEL=.*$/m;
-      const newLine = `GEMINI_MODEL=${model}`;
-
-      if (regex.test(envContent)) {
-        envContent = envContent.replace(regex, newLine);
-      } else {
-        envContent += (envContent.endsWith("\n") || envContent === "" ? "" : "\n") + newLine + "\n";
-      }
-
-      fs.writeFileSync(ENV_FILE, envContent, "utf8");
-      process.env.GEMINI_MODEL = model;
+      config.geminiModel = model;
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), "utf8");
 
       return {
         content: [{ type: "text", text: `Default model set to: ${model}` }],
       };
     } catch (error) {
       return {
-        content: [{ type: "text", text: `Error updating .env: ${error.message}` }],
+        content: [{ type: "text", text: `Error updating config.json: ${error.message}` }],
         isError: true,
       };
     }
@@ -253,7 +257,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       content: [
         {
           type: "text",
-          text: `Current default model: ${process.env.GEMINI_MODEL || "not set"}`,
+          text: `Current default model: ${config.geminiModel || "not set"}`,
         },
       ],
     };

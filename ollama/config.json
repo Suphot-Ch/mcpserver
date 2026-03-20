@@ -1,0 +1,4 @@
+{
+  "ollamaBaseUrl": "http://localhost:11434",
+  "ollamaDefaultModel": "gemma3:1b"
+}

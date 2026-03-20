@@ -15,11 +15,13 @@ An MCP server wrapper for [Ollama](https://ollama.com/), providing tools to inte
     ```bash
     npm install
     ```
-2.  **Configure environment**:
-    Create a `.env` file based on `.env.example`:
-    ```env
-    OLLAMA_BASE_URL=http://localhost:11434
-    OLLAMA_DEFAULT_MODEL=gemma3:1b
+2.  **Configure**:
+    Create a `config.json` file in the project root:
+    ```json
+    {
+      "ollamaBaseUrl": "http://localhost:11434",
+      "ollamaDefaultModel": "gemma3:1b"
+    }
     ```
 3.  **Start the server**:
     ```bash

@@ -8,6 +8,14 @@ This repository serves as a centralized workspace for various Model Context Prot
   - **Description**: MCP server for industrial control and monitoring of RM-012G devices.
   - **Features**: Modbus read/write, system status, VPN/Node-RED control.
   
+- **[ollama/](./ollama/)**:
+  - **Description**: MCP server wrapper for [Ollama](https://ollama.com/), providing tools to interact with local LLMs.
+  - **Features**: Model listing, chat/generate completions, model information.
+
+- **[openai/](./openai/)**:
+  - **Description**: MCP server for interacting with OpenAI models.
+  - **Features**: Model listing, chat completions.
+
 - **[gemini-cli/](./gemini-cli/)**: 
   - **Description**: A collection of tools for interacting with Gemini models.
   - **Components**: Client, server, and MCP implementations.
@@ -16,13 +24,25 @@ This repository serves as a centralized workspace for various Model Context Prot
 
 To use these servers, point your MCP-enabled application (like Claude Desktop or Gemini) to the corresponding project directory's entry point (usually `index.js`).
 
-### Example Integration (RM-012G)
+### Configuration Example (Claude Desktop/Gemini CLI)
+
 ```json
 {
   "mcpServers": {
     "rm012g": {
       "command": "node",
       "args": ["D:/antigravity/MCP-Server/rm-012g/index.js"]
+    },
+    "ollama": {
+      "command": "node",
+      "args": ["D:/antigravity/MCP-Server/ollama/index.js"]
+    },
+    "openai": {
+      "command": "node",
+      "args": ["D:/antigravity/MCP-Server/openai/index.js"],
+      "env": {
+        "OPENAI_API_KEY": "your_api_key_here"
+      }
     }
   }
 }
