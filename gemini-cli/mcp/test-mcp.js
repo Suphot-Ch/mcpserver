@@ -1,7 +1,7 @@
 import { spawn } from "child_process";
 
 const child = spawn("node", ["index.js"], {
-  cwd: "D:/gemini/gemini-cli-webserver/mcpserver",
+  cwd: "D:/antigravity/MCP-Server/gemini-cli/mcp",
 });
 
 child.stdout.on("data", (data) => {

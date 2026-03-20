@@ -1,7 +1,7 @@
 {
-  "name": "gemini-cli-mcp-server",
+  "name": "ollama-mcp-server",
   "version": "1.0.0",
-  "description": "MCP server wrapper for Gemini CLI",
+  "description": "MCP server for Ollama local LLMs",
   "main": "index.js",
   "type": "module",
   "scripts": {

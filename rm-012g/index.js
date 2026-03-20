@@ -8,6 +8,10 @@ const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { CallToolRequestSchema, ListToolsRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+
+const TOKEN_FILE = path.join(__dirname, '.token');
 
 const API_BASE_URL = process.env.RM012G_API_URL || 'http://192.168.109.200:8080';
 let API_TOKEN = process.env.RM012G_API_TOKEN || '';
@@ -23,6 +27,26 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
+function loadToken() {
+  try {
+    if (fs.existsSync(TOKEN_FILE)) {
+      API_TOKEN = fs.readFileSync(TOKEN_FILE, 'utf8').trim();
+      console.error('Loaded persistent token from file.');
+    }
+  } catch (error) {
+    console.error('Error loading token:', error.message);
+  }
+}
+
+function saveToken(token) {
+  try {
+    fs.writeFileSync(TOKEN_FILE, token, 'utf8');
+    API_TOKEN = token;
+  } catch (error) {
+    console.error('Error saving token:', error.message);
+  }
+}
 
 const server = new Server(
   {
@@ -190,8 +214,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           password: args.password,
         });
         if (response.data && response.data.token) {
-          API_TOKEN = response.data.token;
-          return { content: [{ type: 'text', text: `Login successful. Token acquired and set for current session.` }] };
+          saveToken(response.data.token);
+          return { content: [{ type: 'text', text: `Login successful. Token acquired and persisted.` }] };
         }
         return { content: [{ type: 'text', text: `Login failed: ${JSON.stringify(response.data)}` }], isError: true };
       }
@@ -315,6 +339,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 async function main() {
+  loadToken();
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

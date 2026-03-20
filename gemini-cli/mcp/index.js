@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -11,6 +12,7 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const ENV_FILE = path.join(__dirname, ".env");
 
 /**
  * Function to dynamically find the path to the Gemini CLI's index.js.
@@ -119,79 +121,145 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["prompt"],
         },
       },
+      {
+        name: "set-default-model",
+        description: "Set the default Gemini model used by the server.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            model: {
+              type: "string",
+              description: "The Gemini model name (e.g., gemini-2.0-flash).",
+            },
+          },
+          required: ["model"],
+        },
+      },
+      {
+        name: "get-current-model",
+        description: "Get the currently configured default Gemini model.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+        },
+      },
     ],
   };
 });
 
 /**
- * Handler for the ask-gemini tool.
- * Spawns the geminicli process and returns the output.
+ * Handler for the MCP tools.
+ * Handles ask-gemini, set-default-model, and get-current-model.
  */
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  if (request.params.name !== "ask-gemini") {
-    throw new Error(`Tool not found: ${request.params.name}`);
-  }
+  const { name, arguments: args } = request.params;
 
-  const { prompt, model } = request.params.arguments;
-  const args = [geminiJsPath, "--prompt", prompt];
+  if (name === "ask-gemini") {
+    const { prompt, model } = args;
+    const activeModel = model || process.env.GEMINI_MODEL;
+    const spawnArgs = [geminiJsPath, "--prompt", prompt];
 
-  if (model) {
-    args.push("--model", model);
-  }
+    if (activeModel) {
+      spawnArgs.push("--model", activeModel);
+    }
 
-  return new Promise((resolve, reject) => {
-    const geminiProcess = spawn("node", args);
-    let output = "";
-    let errorOutput = "";
+    return new Promise((resolve) => {
+      const geminiProcess = spawn("node", spawnArgs);
+      let output = "";
+      let errorOutput = "";
 
-    geminiProcess.stdout.on("data", (data) => {
-      const chunk = data.toString();
-      // Filter out initialization messages as done in the original server
-      if (
-        !chunk.includes("Loaded cached credentials") &&
-        !chunk.includes("I am your senior software engineer")
-      ) {
-        output += chunk;
-      }
-    });
+      geminiProcess.stdout.on("data", (data) => {
+        const chunk = data.toString();
+        if (
+          !chunk.includes("Loaded cached credentials") &&
+          !chunk.includes("I am your senior software engineer")
+        ) {
+          output += chunk;
+        }
+      });
 
-    geminiProcess.stderr.on("data", (data) => {
-      const errChunk = data.toString();
-      if (!errChunk.includes("Loaded cached credentials")) {
-        errorOutput += errChunk;
-      }
-    });
+      geminiProcess.stderr.on("data", (data) => {
+        const errChunk = data.toString();
+        if (!errChunk.includes("Loaded cached credentials")) {
+          errorOutput += errChunk;
+        }
+      });
 
-    geminiProcess.on("close", (code) => {
-      if (code !== 0 && errorOutput) {
+      geminiProcess.on("close", (code) => {
+        if (code !== 0 && errorOutput) {
+          resolve({
+            content: [
+              {
+                type: "text",
+                text: `Error from Gemini CLI: ${errorOutput.substring(0, 1000)}`,
+              },
+            ],
+            isError: true,
+          });
+        } else {
+          resolve({
+            content: [{ type: "text", text: output.trim() }],
+          });
+        }
+      });
+
+      geminiProcess.on("error", (err) => {
         resolve({
           content: [
             {
               type: "text",
-              text: `Error from Gemini CLI: ${errorOutput.substring(0, 1000)}`,
+              text: `Failed to start Gemini process: ${err.message}`,
             },
           ],
           isError: true,
         });
-      } else {
-        resolve({
-          content: [{ type: "text", text: output.trim() }],
-        });
-      }
-    });
-
-    geminiProcess.on("error", (err) => {
-      resolve({
-        content: [
-          {
-            type: "text",
-            text: `Failed to start Gemini process: ${err.message}`,
-          },
-        ],
-        isError: true,
       });
     });
-  });
+  }
+
+  if (name === "set-default-model") {
+    const { model } = args;
+    try {
+      let envContent = "";
+      if (fs.existsSync(ENV_FILE)) {
+        envContent = fs.readFileSync(ENV_FILE, "utf8");
+      }
+
+      const regex = /^GEMINI_MODEL=.*$/m;
+      const newLine = `GEMINI_MODEL=${model}`;
+
+      if (regex.test(envContent)) {
+        envContent = envContent.replace(regex, newLine);
+      } else {
+        envContent += (envContent.endsWith("\n") || envContent === "" ? "" : "\n") + newLine + "\n";
+      }
+
+      fs.writeFileSync(ENV_FILE, envContent, "utf8");
+      process.env.GEMINI_MODEL = model;
+
+      return {
+        content: [{ type: "text", text: `Default model set to: ${model}` }],
+      };
+    } catch (error) {
+      return {
+        content: [{ type: "text", text: `Error updating .env: ${error.message}` }],
+        isError: true,
+      };
+    }
+  }
+
+  if (name === "get-current-model") {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Current default model: ${process.env.GEMINI_MODEL || "not set"}`,
+        },
+      ],
+    };
+  }
+
+  throw new Error(`Tool not found: ${name}`);
 });
 
 /**
