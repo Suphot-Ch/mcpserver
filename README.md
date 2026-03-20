@@ -31,15 +31,15 @@ To use these servers, point your MCP-enabled application (like Claude Desktop or
   "mcpServers": {
     "rm012g": {
       "command": "node",
-      "args": ["D:/antigravity/MCP-Server/rm-012g/index.js"]
+      "args": ["[YOUR_PATH]/rm-012g/index.js"]
     },
     "ollama": {
       "command": "node",
-      "args": ["D:/antigravity/MCP-Server/ollama/index.js"]
+      "args": ["[YOUR_PATH]/ollama/index.js"]
     },
     "openai": {
       "command": "node",
-      "args": ["D:/antigravity/MCP-Server/openai/index.js"],
+      "args": ["[YOUR_PATH]/openai/index.js"],
       "env": {
         "OPENAI_API_KEY": "your_api_key_here"
       }
