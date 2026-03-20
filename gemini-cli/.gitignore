@@ -1,0 +1,38 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Build outputs
+build/
+dist/
+out/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor/System files
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Gemini Artifacts
+.gemini/
+brain/
