@@ -336,7 +336,7 @@ export default class MemosSyncPlugin extends Plugin {
       const memoUpdateTime = this.parseTimestamp(memo.updateTime);
 
       // Only update if memo changed on server since last sync
-      if (memoUpdateTime <= lastSyncTime) continue;
+      if (memoUpdateTime < lastSyncTime) continue;
 
       try {
         // Find existing file by UID (scan folder for uid in frontmatter)
@@ -357,10 +357,9 @@ export default class MemosSyncPlugin extends Plugin {
               // Rename file if title changed
               const newPath = `${folder}/${newName}.md`;
               await this.app.vault.rename(existingFile, newPath);
-            } else {
-              // Just update content
-              await this.app.vault.modify(existingFile, fileContent);
             }
+            // Always update content after potential rename
+            await this.app.vault.modify(existingFile, fileContent);
             updated++;
           }
         } else {
@@ -491,9 +490,13 @@ export default class MemosSyncPlugin extends Plugin {
           const newMemoName = await this.createMemoApi(localBody);
           if (newMemoName) {
             // Update file with new uid and name
-            await this.updateFileWithMemoInfo(child, newMemoName);
-            created++;
-            console.log(`[Memos Sync] ✅ Created: ${child.name}`);
+            const updateOk = await this.updateFileWithMemoInfo(child, newMemoName);
+            if (updateOk) {
+              created++;
+              console.log(`[Memos Sync] ✅ Created: ${child.name}`);
+            } else {
+              console.error(`[Memos Sync] ⚠️ Created memo but failed to update file: ${child.name}`);
+            }
           } else {
             console.error(`[Memos Sync] ❌ Failed to create: ${child.name}`);
           }
@@ -549,7 +552,7 @@ export default class MemosSyncPlugin extends Plugin {
     }
   }
 
-  private async updateFileWithMemoInfo(file: TFile, memoName: string): Promise<void> {
+  private async updateFileWithMemoInfo(file: TFile, memoName: string): Promise<boolean> {
     try {
       const raw = await this.app.vault.read(file);
       const body = this.extractBody(raw);
@@ -573,8 +576,10 @@ export default class MemosSyncPlugin extends Plugin {
       ].join('\n');
 
       await this.app.vault.modify(file, newContent);
+      return true;
     } catch (err: any) {
       console.error('[Memos Sync] Update file error:', err.message);
+      return false;
     }
   }
 

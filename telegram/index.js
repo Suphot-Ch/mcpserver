@@ -1,17 +1,45 @@
-import "dotenv/config";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ENV_PATH = path.join(__dirname, ".env");
+const envResult = dotenv.config({ path: ENV_PATH });
+
+const TOOL_SEND_MESSAGE = "send-message";
+const TOOL_SEND_MESSAGE_ALIAS = "send_message";
+const TOOL_GET_CONFIG = "get-config";
+const TOOL_GET_CONFIG_ALIAS = "get_config";
+
+function parseBooleanEnv(value, defaultValue = false) {
+  if (typeof value !== "string") {
+    return defaultValue;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "true") {
+    return true;
+  }
+  if (normalized === "false") {
+    return false;
+  }
+
+  return defaultValue;
+}
 
 const config = {
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || "",
   telegramDefaultChatId: process.env.TELEGRAM_DEFAULT_CHAT_ID || "",
   telegramParseMode: process.env.TELEGRAM_PARSE_MODE || "",
-  telegramDisableNotification: process.env.TELEGRAM_DISABLE_NOTIFICATION === "true",
-  telegramAutoHeader: process.env.TELEGRAM_AUTO_HEADER !== "false",
+  telegramDisableNotification: parseBooleanEnv(process.env.TELEGRAM_DISABLE_NOTIFICATION, false),
+  telegramAutoHeader: parseBooleanEnv(process.env.TELEGRAM_AUTO_HEADER, true),
   telegramSenderApp: process.env.TELEGRAM_SENDER_APP || "",
   telegramSenderSession: process.env.TELEGRAM_SENDER_SESSION || "",
   telegramSenderWorkspace: process.env.TELEGRAM_SENDER_WORKSPACE || "",
@@ -20,7 +48,7 @@ const config = {
 function requireBotToken() {
   const token = config.telegramBotToken;
   if (!token) {
-    throw new Error("Missing Telegram bot token. Set TELEGRAM_BOT_TOKEN in .env file.");
+    throw new Error("Missing Telegram bot token. Set TELEGRAM_BOT_TOKEN in telegram/.env or in the MCP env config.");
   }
   return token;
 }
@@ -65,7 +93,7 @@ function detectSenderApp() {
     process.env.CLAUDECODE,
     process.env.CLAUDE_CODE ? "claude" : "",
     process.env.CODEX_THREAD_ID ? "codex" : "",
-    process.env.CODEX_WORKSPACE ? "codex" : "", // เพิ่มการเช็คจาก Workspace
+    process.env.CODEX_WORKSPACE ? "codex" : "",
     "unknown"
   );
 }
@@ -77,8 +105,8 @@ function detectSenderSession() {
     process.env.CLAUDE_SESSION_ID,
     process.env.GEMINI_SESSION_ID,
     process.env.WT_SESSION,
-    process.env.SESSIONNAME, // เพิ่มการเช็คชื่อ Session พื้นฐานของ Windows
-    "cmd-session" // เปลี่ยนจาก unknown เป็นค่าที่สื่อความหมายขึ้น
+    process.env.SESSIONNAME,
+    "cmd-session"
   );
 }
 
@@ -114,6 +142,10 @@ function buildOutgoingText(text, includeHeader = true, overrideSenderApp) {
   return `${buildMessageHeader(overrideSenderApp)}${text}`;
 }
 
+function isToolName(name, primaryName, aliasName) {
+  return name === primaryName || name === aliasName;
+}
+
 const server = new Server(
   {
     name: "telegram-mcp-server",
@@ -130,7 +162,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
-        name: "send-message",
+        name: TOOL_SEND_MESSAGE,
         description: "Send a Telegram message using a bot token and target chat ID.",
         inputSchema: {
           type: "object",
@@ -165,7 +197,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
-        name: "get-config",
+        name: TOOL_GET_CONFIG,
         description: "Get the current Telegram configuration without exposing the bot token.",
         inputSchema: {
           type: "object",
@@ -180,7 +212,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args = {} } = request.params;
 
   try {
-    if (name === "send-message") {
+    if (isToolName(name, TOOL_SEND_MESSAGE, TOOL_SEND_MESSAGE_ALIAS)) {
       const chatId = args.chatId || config.telegramDefaultChatId || process.env.TELEGRAM_DEFAULT_CHAT_ID;
       if (!chatId) {
         throw new Error("Missing chatId. Pass chatId in the tool call or set TELEGRAM_DEFAULT_CHAT_ID.");
@@ -190,13 +222,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         chat_id: chatId,
         text: buildOutgoingText(
           args.text,
-          typeof args.includeHeader === "boolean" ? args.includeHeader : config.telegramAutoHeader !== false,
+          typeof args.includeHeader === "boolean" ? args.includeHeader : config.telegramAutoHeader,
           args.senderApp
         ),
         disable_notification:
           typeof args.disableNotification === "boolean"
             ? args.disableNotification
-            : Boolean(config.telegramDisableNotification),
+            : config.telegramDisableNotification,
       };
 
       const parseMode = args.parseMode || config.telegramParseMode;
@@ -225,11 +257,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
-    if (name === "get-config") {
+    if (isToolName(name, TOOL_GET_CONFIG, TOOL_GET_CONFIG_ALIAS)) {
       const safeConfig = { ...config };
       if (safeConfig.telegramBotToken) {
         safeConfig.telegramBotToken = "********";
       }
+
+      safeConfig.envFilePath = ENV_PATH;
+      safeConfig.envFileLoaded = !envResult.error;
+
       return {
         content: [{ type: "text", text: JSON.stringify(safeConfig, null, 2) }],
       };

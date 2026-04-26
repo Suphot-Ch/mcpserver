@@ -28,15 +28,18 @@ try {
 }
 
 /**
- * Function to dynamically find the path to the Gemini CLI's index.js.
+ * Function to dynamically find the path to the Gemini CLI's entry point.
  */
 function findGeminiCliPath() {
-  // 0. Use CLI_INDEXPATH from environment if provided
+  // Check environment variables first
+  if (process.env.GEMINI_CLI_PATH && fs.existsSync(process.env.GEMINI_CLI_PATH)) {
+    return process.env.GEMINI_CLI_PATH;
+  }
   if (process.env.CLI_INDEXPATH && fs.existsSync(process.env.CLI_INDEXPATH)) {
     return process.env.CLI_INDEXPATH;
   }
 
-  const cliRelativePath = path.join("@google", "gemini-cli", "dist", "index.js");
+  const cliRelativePath = path.join("@google", "gemini-cli", "bundle", "gemini.js");
   let globalNodeModulesPath;
 
   // Attempt to find via npm root -g
@@ -50,7 +53,7 @@ function findGeminiCliPath() {
       return fullPath;
     }
   } catch (error) {
-    // console.warn(`'npm root -g' failed or gemini-cli not found there.`);
+    // Silent fail
   }
 
   // Fallback to common global paths
@@ -64,27 +67,16 @@ function findGeminiCliPath() {
     if (process.env.APPDATA) {
       commonGlobalPaths.push(path.join(process.env.APPDATA, "npm", "node_modules"));
     }
-    commonGlobalPaths.push(
-      path.join(
-        process.env.USERPROFILE || "",
-        "AppData",
-        "Roaming",
-        "npm",
-        "node_modules"
-      )
-    );
+    if (process.env.USERPROFILE) {
+      commonGlobalPaths.push(
+        path.join(process.env.USERPROFILE, "AppData", "Roaming", "npm", "node_modules")
+      );
+    }
   } else {
     commonGlobalPaths.push("/usr/local/lib/node_modules", "/usr/lib/node_modules");
-    if (process.env.NVM_DIR && process.version) {
+    if (process.env.NVM_DIR) {
       commonGlobalPaths.push(
-        path.join(
-          process.env.NVM_DIR,
-          "versions",
-          "node",
-          process.version,
-          "lib",
-          "node_modules"
-        )
+        path.join(process.env.NVM_DIR, "versions", "node", process.version, "lib", "node_modules")
       );
     }
   }
@@ -96,8 +88,8 @@ function findGeminiCliPath() {
     }
   }
 
-  // Last resort: assume it's in the PATH or just return the known Windows path if everything else fails
-  return "C:\\Program Files\\nodejs\\node_modules\\@google\\gemini-cli\\dist\\index.js";
+  // Default fallback for Windows
+  return "C:\\Program Files\\nodejs\\node_modules\\@google\\gemini-cli\\bundle\\gemini.js";
 }
 
 const geminiJsPath = findGeminiCliPath();
