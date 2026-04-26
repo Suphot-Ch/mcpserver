@@ -16,6 +16,10 @@ This repository serves as a centralized workspace for various Model Context Prot
   - **Description**: MCP server for interacting with OpenAI models.
   - **Features**: Model listing, chat completions.
 
+- **[telegram/](./telegram/)**:
+  - **Description**: MCP server for sending Telegram messages with a bot.
+  - **Features**: Send text messages and inspect safe config values.
+
 - **[gemini-cli/](./gemini-cli/)**: 
   - **Description**: A collection of tools for interacting with Gemini models.
   - **Components**: Client, server, and MCP implementations.
@@ -42,6 +46,14 @@ To use these servers, point your MCP-enabled application (like Claude Desktop or
       "args": ["[YOUR_PATH]/openai/index.js"],
       "env": {
         "OPENAI_API_KEY": "your_api_key_here"
+      }
+    },
+    "telegram": {
+      "command": "node",
+      "args": ["[YOUR_PATH]/telegram/index.js"],
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "your_telegram_bot_token_here",
+        "TELEGRAM_DEFAULT_CHAT_ID": "your_chat_id_here"
       }
     }
   }

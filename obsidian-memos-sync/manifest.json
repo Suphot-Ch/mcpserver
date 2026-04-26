@@ -1,0 +1,11 @@
+{
+  "id": "obsidian-memos-sync",
+  "name": "Memos Sync",
+  "version": "1.0.0",
+  "minAppVersion": "0.12.0",
+  "description": "Sync your notes with Memos API",
+  "author": "Your Name",
+  "authorUrl": "https://github.com",
+  "fundingUrl": "https://buymeacoffee.com",
+  "isDesktopOnly": false
+}

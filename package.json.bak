@@ -1,0 +1,25 @@
+{
+  "name": "obsidian-memos-sync",
+  "version": "1.1.0",
+  "description": "Bidirectional sync plugin for Obsidian and Memos",
+  "main": "main.js",
+  "scripts": {
+    "dev": "tsc -noEmit && node esbuild.config.mjs",
+    "build": "tsc -noEmit && node esbuild.config.mjs production",
+    "dist": "npm run build && npm run package",
+    "package": "node scripts/package.js"
+  },
+  "keywords": ["obsidian", "memos", "sync"],
+  "author": "Suphot-Ch",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^16.11.6",
+    "@typescript-eslint/eslint-plugin": "5.2.0",
+    "@typescript-eslint/parser": "5.2.0",
+    "builtin-modules": "3.2.0",
+    "esbuild": "13.13.0",
+    "obsidian": "latest",
+    "tslib": "2.4.0",
+    "typescript": "4.7.4"
+  }
+}

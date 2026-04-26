@@ -1,0 +1,61 @@
+📦 obsidian-memos-sync
+│
+├── 📄 Plugin Files (Distribution)
+│   ├── main.js                  (🔨 compiled - AUTO GENERATED)
+│   ├── manifest.json            (🏷️  metadata)
+│   └── styles.css              (🎨 styling)
+│
+├── ⚙️ Configuration
+│   ├── package.json            (dependencies)
+│   ├── tsconfig.json           (TypeScript)
+│   ├── esbuild.config.mjs      (build config)
+│   └── .gitignore              (git rules)
+│
+├── 📁 src/
+│   └── main.ts                 (✏️  source - EDIT THIS)
+│
+├── 📁 docs/
+│   ├── README.md               (full guide)
+│   ├── QUICKSTART.md           (5-min setup)
+│   ├── TROUBLESHOOTING.md      (help)
+│   └── CHANGELOG.md            (history)
+│
+├── 📁 scripts/
+│   ├── install.ps1             (Windows)
+│   └── install.sh              (Linux/macOS)
+│
+├── 📄 PROJECT_STRUCTURE.md     (this guide)
+│
+└── 📁 node_modules/            (🚫 ignored)
+    └── dependencies...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT TO EDIT:
+  ✏️  src/main.ts            → Source code
+  ✏️  styles.css             → UI styling
+  ✏️  docs/                  → Documentation
+  ✏️  package.json (deps)    → Dependencies only
+
+DO NOT EDIT:
+  🚫 main.js                → Auto-generated (rebuild instead)
+  🚫 node_modules/          → Dependencies (reinstall)
+  🚫 package-lock.json      → Auto-managed
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BUILD COMMANDS:
+  npm install               → Install dependencies (first time)
+  npm run dev              → Dev build (watch mode)
+  npm run build            → Production build
+
+GIT:
+  git add .                → Will ignore node_modules & main.js
+  git commit -m "..."      → Create commit
+  git push                 → Push to remote
+
+DISTRIBUTION:
+  After npm run build:
+    → main.js is ready
+    → Copy to ~/.obsidian/plugins/obsidian-memos-sync/
+    → Or run scripts/install.ps1 or scripts/install.sh
