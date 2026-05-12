@@ -15,7 +15,7 @@ const CONFIG_PATH = path.join(__dirname, "config.json");
 
 // Load configuration
 let config = {
-  geminiModel: "gemini-2.0-flash"
+  geminiModel: ""
 };
 
 try {

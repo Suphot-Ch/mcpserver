@@ -318,6 +318,23 @@ const tools = [
     },
   },
   {
+    name: 'create_tag',
+    description: 'Create a new Modbus tag',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        port_id: { type: 'number' },
+        device: { type: 'string' },
+        name: { type: 'string' },
+        address: { type: 'number' },
+        type: { type: 'string', enum: ['U_INT16', 'INT16', 'U_INT32', 'INT32', 'FLOAT32', 'BIT'], default: 'U_INT16' },
+        mode: { type: 'string', enum: ['Read/Write', 'Read Only'], default: 'Read/Write' },
+        multiplier: { type: 'number', default: 1 },
+      },
+      required: ['port_id', 'device', 'name', 'address'],
+    },
+  },
+  {
     name: 'get_device_models',
     description: 'Get available device models for a specific port',
     inputSchema: {
@@ -610,6 +627,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
       case 'delete_device': {
         const response = await apiClient.delete(`/api/device/${args.name}/${args.port}`);
+        return { content: [{ type: 'text', text: JSON.stringify(response.data, null, 2) }] };
+      }
+      case 'create_tag': {
+        const { device, ...rest } = args;
+        const payload = { ...rest, device_name: device };
+        const response = await apiClient.post('/api/tag', payload);
         return { content: [{ type: 'text', text: JSON.stringify(response.data, null, 2) }] };
       }
       case 'get_device_models': {
